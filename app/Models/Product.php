@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 class Product extends Model
 {
     protected $fillable = [
+        'image',
         'title',
         'description',
         'price',
