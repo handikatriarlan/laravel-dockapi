@@ -15,6 +15,14 @@ class ProductController extends Controller
     {
         $products = Product::latest()->paginate(5);
 
+        if ($products->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No products found!',
+                'data'    => []
+            ], 404);
+        }
+
         return new ProductResource(true, 'Product Data List', $products);
     }
 
@@ -32,23 +40,38 @@ class ProductController extends Controller
             return response()->json($validator->errors(), 422);
         }
 
-        $image = $request->file('image');
-        $image->storeAs('products', $image->hashName());
+        try {
+            $image = $request->file('image');
+            $image->storeAs('products', $image->hashName(), 'public');
 
-        $product = Product::create([
-            'image'         => $image->hashName(),
-            'title'         => $request->title,
-            'description'   => $request->description,
-            'price'         => $request->price,
-            'stock'         => $request->stock,
-        ]);
+            $product = Product::create([
+                'image'         => $image->hashName(),
+                'title'         => $request->title,
+                'description'   => $request->description,
+                'price'         => $request->price,
+                'stock'         => $request->stock,
+            ]);
 
-        return new ProductResource(true, 'Product Data Successfully Added!', $product);
+            return new ProductResource(true, 'Product Data Successfully Added!', $product);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function show($id)
     {
         $product = Product::find($id);
+
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found!'
+            ], 404);
+        }
 
         return new ProductResource(true, 'Detail Data Product', $product);
     }
@@ -56,11 +79,11 @@ class ProductController extends Controller
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'image'         => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'title'         => 'string',
-            'description'   => 'string',
-            'price'         => 'numeric',
-            'stock'         => 'numeric',
+            'image'         => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'title'         => 'nullable|string',
+            'description'   => 'nullable|string',
+            'price'         => 'nullable|numeric',
+            'stock'         => 'nullable|numeric',
         ]);
 
         if ($validator->fails()) {
@@ -68,28 +91,28 @@ class ProductController extends Controller
         }
 
         $product = Product::find($id);
-        $data = [];
 
-        if ($request->has('title')) {
-            $data['title'] = $request->title;
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found!'
+            ], 404);
         }
-        if ($request->has('description')) {
-            $data['description'] = $request->description;
-        }
-        if ($request->has('price')) {
-            $data['price'] = $request->price;
-        }
-        if ($request->has('stock')) {
-            $data['stock'] = $request->stock;
-        }
+
+        $data = $request->only(['title', 'description', 'price', 'stock']);
 
         if ($request->hasFile('image')) {
-            Storage::delete('products/' . basename($product->image));
+            $imageName = basename($product->image);
+
+            if ($imageName && Storage::disk('public')->exists("products/{$imageName}")) {
+                Storage::disk('public')->delete("products/{$imageName}");
+            }
 
             $image = $request->file('image');
-            $image->storeAs('products', $image->hashName());
+            $imageName = $image->hashName();
+            $image->storeAs('products', $imageName, 'public');
 
-            $data['image'] = $image->hashName();
+            $data['image'] = $imageName;
         }
 
         $product->update($data);
@@ -108,7 +131,11 @@ class ProductController extends Controller
             ], 404);
         }
 
-        Storage::delete('products/' . basename($product->image));
+        $imageName = basename($product->image);
+
+        if ($imageName && Storage::disk('public')->exists("products/{$imageName}")) {
+            Storage::disk('public')->delete("products/{$imageName}");
+        }
 
         $product->delete();
 
