@@ -96,4 +96,22 @@ class ProductController extends Controller
 
         return new ProductResource(true, 'Product Data Successfully Updated!', $product);
     }
+
+    public function destroy($id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found!'
+            ], 404);
+        }
+
+        Storage::delete('products/' . basename($product->image));
+
+        $product->delete();
+
+        return new ProductResource(true, 'Product Data Successfully Deleted!', null);
+    }
 }
