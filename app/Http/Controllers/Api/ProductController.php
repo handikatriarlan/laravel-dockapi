@@ -22,8 +22,8 @@ class ProductController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'image'         => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'title'         => 'required',
-            'description'   => 'required',
+            'title'         => 'required|string',
+            'description'   => 'required|string',
             'price'         => 'required|numeric',
             'stock'         => 'required|numeric',
         ]);
@@ -57,10 +57,10 @@ class ProductController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'image'         => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'title'         => 'required',
-            'description'   => 'required',
-            'price'         => 'required|numeric',
-            'stock'         => 'required|numeric',
+            'title'         => 'string',
+            'description'   => 'string',
+            'price'         => 'numeric',
+            'stock'         => 'numeric',
         ]);
 
         if ($validator->fails()) {
@@ -68,29 +68,31 @@ class ProductController extends Controller
         }
 
         $product = Product::find($id);
+        $data = [];
+
+        if ($request->has('title')) {
+            $data['title'] = $request->title;
+        }
+        if ($request->has('description')) {
+            $data['description'] = $request->description;
+        }
+        if ($request->has('price')) {
+            $data['price'] = $request->price;
+        }
+        if ($request->has('stock')) {
+            $data['stock'] = $request->stock;
+        }
 
         if ($request->hasFile('image')) {
-
             Storage::delete('products/' . basename($product->image));
 
             $image = $request->file('image');
             $image->storeAs('products', $image->hashName());
 
-            $product->update([
-                'image'         => $image->hashName(),
-                'title'         => $request->title,
-                'description'   => $request->description,
-                'price'         => $request->price,
-                'stock'         => $request->stock,
-            ]);
-        } else {
-            $product->update([
-                'title'         => $request->title,
-                'description'   => $request->description,
-                'price'         => $request->price,
-                'stock'         => $request->stock,
-            ]);
+            $data['image'] = $image->hashName();
         }
+
+        $product->update($data);
 
         return new ProductResource(true, 'Product Data Successfully Updated!', $product);
     }
