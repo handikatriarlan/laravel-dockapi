@@ -44,4 +44,11 @@ class ProductController extends Controller
 
         return new ProductResource(true, 'Product Data Successfully Added!', $product);
     }
+
+    public function show($id)
+    {
+        $product = Product::find($id);
+
+        return new ProductResource(true, 'Detail Data Product', $product);
+    }
 }
