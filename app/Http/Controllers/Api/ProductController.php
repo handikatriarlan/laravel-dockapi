@@ -6,6 +6,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ProductResource;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class ProductController extends Controller
@@ -50,5 +51,47 @@ class ProductController extends Controller
         $product = Product::find($id);
 
         return new ProductResource(true, 'Detail Data Product', $product);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'image'         => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'title'         => 'required',
+            'description'   => 'required',
+            'price'         => 'required|numeric',
+            'stock'         => 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        $product = Product::find($id);
+
+        if ($request->hasFile('image')) {
+
+            Storage::delete('products/' . basename($product->image));
+
+            $image = $request->file('image');
+            $image->storeAs('products', $image->hashName());
+
+            $product->update([
+                'image'         => $image->hashName(),
+                'title'         => $request->title,
+                'description'   => $request->description,
+                'price'         => $request->price,
+                'stock'         => $request->stock,
+            ]);
+        } else {
+            $product->update([
+                'title'         => $request->title,
+                'description'   => $request->description,
+                'price'         => $request->price,
+                'stock'         => $request->stock,
+            ]);
+        }
+
+        return new ProductResource(true, 'Product Data Successfully Updated!', $product);
     }
 }
