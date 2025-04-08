@@ -1,0 +1,17 @@
+meta {
+  name: Update Product by ID
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/1
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  title: iPhone X
+  image: @file(C:\Users\handi\Downloads\rstore-assets\lp 15 1920x500px.jpg)
+  _method: PUT
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Add New Product
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}
+  body: multipartForm
+  auth: none
+}
+
+body:form-urlencoded {
+  : 
+}
+
+body:multipart-form {
+  title: iPhone 16 Pro Max
+  description: Ini Adalah iPhone 16 Pro Max Terbaru.
+  price: 24000000
+  stock: 31
+  image: @file(C:\Users\handi\Downloads\rstore-assets\lp 16 1920x500px.jpg)
+}
